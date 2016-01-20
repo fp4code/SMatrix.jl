@@ -123,10 +123,10 @@ s0a = SMatrix.SMat(r0a0, 1-r0a0, 1+r0a0, -r0a0)
 sa0 = SMatrix.SMat(-r0a0, 1+r0a0, 1-r0a0, +r0a0)
 sba = SMatrix.SMat(rbab, 1-rbab, 1+rbab, -rbab)
 sab = SMatrix.SMat(-rbab, 1+rbab, 1-rbab, +rbab)
-stack = SMatrix.Stack({s0a,
-                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
-                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
-                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba})
+stack = SMatrix.Stack(Any[s0a,
+                          pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
+                          pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
+                          pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba])
 sp = SMatrix.compute_stack_p(stack)
 sm = SMatrix.compute_stack_m(stack)
 Rp = map(x->abs(x.s11)^2, sp)

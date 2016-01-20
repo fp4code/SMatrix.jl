@@ -70,6 +70,8 @@ Not that compute_stack_p or compute_stack_m are not the more efficient ways
 to compute an ababababab... multilayer.
 
 ```
+using SMatrix
+
 n0 = 1
 na = 1.5
 nb = 2
@@ -96,5 +98,7 @@ sp = SMatrix.compute_stack_p(stack)
 sm = SMatrix.compute_stack_m(stack)
 Rp = map(x->abs(x.s11)^2, sp)
 Rm = map(x->abs(x.s11)^2, sm)
+
+using PyPlot
 plot(vwl, Rp)
 ```
