@@ -115,5 +115,4 @@ p  = map(x -> SMatrix.Propagator(exp(1im*na*2*pi*h/x)),
 s = SMatrix.compute_stack_p(SMatrix.Stack(Any[sa,p,sb]))
 T = map(x->abs(x.s21)^2, s)
 plot(vwl, T)
-
-	  
+```
