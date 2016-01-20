@@ -1,6 +1,6 @@
 The SMatrix.jl package is licensed under the BSD-like CeCILL-B License:
 
-> Copyright (c) 2016: Fabrice Pardo.
+> Copyright (c) 2016: Fabrice Pardo, LPN-CNRS (fabrice.pardo@lpn.cnrs.fr).
 >
 > CeCILL-B FREE SOFTWARE LICENSE AGREEMENT
 > 
