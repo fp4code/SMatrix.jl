@@ -1,5 +1,56 @@
 using SMatrix
 using Base.Test
 
-# write your own tests here
-@test 1 == 1
+println("stupid scalar test")
+sxy = SMatrix.SMat(0.,1,1,0)
+syz = SMatrix.SMat(0.,1,1,0)
+py = SMatrix.Propagator(1.)
+sxz = SMatrix.add_layer(sxy,py,syz)
+
+@test sxy.s11 ≈ 0.0
+@test sxy.s12 ≈ 1.0
+@test sxy.s21 ≈ 1.0
+@test sxy.s22 ≈ 0.0
+
+println("anti-reflection coating on glass")
+n1 = 1.0
+n3 = 1.5
+n2 = sqrt(n3)
+t21 = 2*n1/(n1+n2)
+t12 = 2*n2/(n1+n2)
+t32 = 2*n2/(n2+n3)
+t23 = 2*n3/(n2+n3)
+r121 = (n1-n2)/(n1+n2)
+r212 = (n2-n1)/(n1+n2)
+r232 = (n2-n3)/(n2+n3)
+r323 = (n3-n2)/(n2+n3)
+@test t21 ≈ 1+r121
+@test t12 ≈ 1+r212
+@test t32 ≈ 1+r232
+@test t23 ≈ 1+r323
+
+sxy = SMatrix.SMat(r121,t12,t21,r212)
+syz = SMatrix.SMat(r232,t23,t32,r323)
+py = SMatrix.Propagator(1im)
+sxz = SMatrix.add_layer(sxy,py,syz)
+
+@test_approx_eq_eps sxz.s11 0.0 1e-14
+@test_approx_eq_eps sxz.s11 0.0 1e-14
+@test_approx_eq_eps abs(sxz.s21) sqrt(n1/n3) 1e-14
+@test_approx_eq_eps abs(sxz.s12) sqrt(n3/n1) 1e-14
+
+println("arbitrary 121 system")
+a = SMatrix.SMat(0.2,[0.3 0.4],[0.5 0.6].',[0.3 -0.4;0.1 -0.03])
+b = SMatrix.SMat([0.31 -0.42;0.13 -0.031im],[0.51 0.63].',[0.34 0.41],0.22)
+pp = [0.1+1im,0.4]
+pm = [0.2+1im,0.2]
+p = SMatrix.Propagator(pp,pm)
+ab = SMatrix.add_layer(a,p,b)
+
+pp = diagm(pp)
+pm = diagm(pm)
+@test ab.s11 ≈  a.s11 + a.s12*inv(eye(2) - pm*b.s11*pp*a.s22)*pm*b.s11*pp*a.s21
+@test ab.s22 ≈  b.s22 + b.s21*inv(eye(2) - pp*a.s22*pm*b.s11)*pp*a.s22*pm*b.s12
+@test ab.s21 ≈ b.s21*inv(eye(2) - pp*a.s22*pm*b.s11)*pp*a.s21
+@test ab.s12 ≈ a.s12*inv(eye(2) - pm*b.s11*pp*a.s22)*pm*b.s12
+
