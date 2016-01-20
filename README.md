@@ -52,7 +52,7 @@ using PyPlot
 plot(vwl, R)
 ```
 
-### Diffraction S-matrix combination
+### diffraction S-matrix combination
 
 Here there is one mode in first medium, two modes in the layer and one mode in third medium.
 Theses values are arbitrary, and certainly not reciprocal!
@@ -64,7 +64,7 @@ p = SMatrix.Propagator([0.8+0.1im, 0.01])
 ab = SMatrix.add_layer(a,p,b)              # 4 numbers
 ```
 
-### Multilayered mirror
+### multilayered mirror
 
 Not that compute_stack_p or compute_stack_m are not the more efficient ways
 to compute an ababababab... multilayer.
@@ -78,7 +78,7 @@ nb = 2
 wl0 = 0.5
 ha = wl0/(4*na)
 hb = wl0/(4*nb)
-vwl = 0.4:0.001:0.8                        # wavelengths
+vwl = 0.4:0.00001:0.8                        # wavelengths
 pa  = map(x -> SMatrix.Propagator(exp(1im*na*2*pi*ha/x)),
           vwl)                            # array of propagators
 pb  = map(x -> SMatrix.Propagator(exp(1im*nb*2*pi*hb/x)),
@@ -102,3 +102,18 @@ Rm = map(x->abs(x.s11)^2, sm)
 using PyPlot
 plot(vwl, Rp)
 ```
+
+Using two such mirrors to create a Fabry-Perot etalon
+
+```
+sa = sp
+sb = map(x -> SMatrix.SMat(x.s22, x.s21, x.s12, x.s11), sa)
+
+h = 10*wl0/(2*na)
+p  = map(x -> SMatrix.Propagator(exp(1im*na*2*pi*h/x)),
+         vwl)                            # array of propagators
+s = SMatrix.compute_stack_p(SMatrix.Stack(Any[sa,p,sb]))
+T = map(x->abs(x.s21)^2, s)
+plot(vwl, T)
+
+	  

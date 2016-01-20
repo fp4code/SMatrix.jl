@@ -103,7 +103,7 @@ pm = diagm(pm)
 @test ab.s21 ≈ abi.s21
 @test ab.s12 ≈ abi.s12
 
-println("multilayer mirror")
+println("multilayered mirror")
 
 n0 = 1
 na = 1.5
