@@ -43,4 +43,41 @@ function add_layer(s_XY::SMat,pY::Propagator,s_YZ::SMat)
     return SMat(s11,s12,s21,s22)
 end
 
+function add_layer(a::Array{SMat},p::Array{Propagator},b::Array{SMat})
+    s = max(size(a), size(p), size(b))
+    if size(a) == (1,)
+        ia(i::Int) = 1
+    elseif size(a) == s
+        ia(i::Int) = i
+    else
+        throw(ArgumentError("Size mismatch for argument 1"))
+    end
+    if size(p) == (1,)
+        ip(i::Int) = 1
+    elseif size(p) == s
+        ip(i::Int) = i
+    else
+        throw(ArgumentError("Size mismatch for argument 2"))
+    end
+    if size(b) == (1,)
+        ib(i::Int) = 1
+    elseif size(b) == s
+        ib(i::Int) = i
+    else
+        throw(ArgumentError("Size mismatch for argument 3"))
+    end
+    sm = Array(SMatrix.SMat, s)
+    for i in 1:prod(s)
+        sm[i] = add_layer(a[ia(i)],p[ip(i)],b[ib(i)])
+    end
+    return sm
+end
+
+add_layer(a::Array{SMat},p::Array{Propagator},b::SMat) = add_layer(a,p,[b])
+add_layer(a::Array{SMat},p::Propagator,b::Array{SMat}) = add_layer(a,[p],b)
+add_layer(a::Array{SMat},p::Propagator,b::SMat) = add_layer(a,[p],[b])
+add_layer(a::SMat,p::Array{Propagator},b::Array{SMat}) = add_layer([a],p,b)
+add_layer(a::SMat,p::Array{Propagator},b::SMat) = add_layer([a],p,[b])
+add_layer(a::SMat,p::Propagator,b::Array{SMat}) = add_layer([a],[p],b)
+
 end # module

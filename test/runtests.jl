@@ -39,6 +39,39 @@ sxz = SMatrix.add_layer(sxy,py,syz)
 @test_approx_eq_eps abs(sxz.s21) sqrt(n1/n3) 1e-14
 @test_approx_eq_eps abs(sxz.s12) sqrt(n3/n1) 1e-14
 
+println("anti-reflection coating on glass, combination of scalar/array arguments")
+na = 1.0
+vnb = sqrt([1.4,1.5,1.6])
+vnc = [1.4,1.5,1.6]
+vwl = [0.4,0.5,0.6]
+h = vwl[2]/(4*vnb[2])
+
+scalarize(x::Array) = (length(x) == 1 ? x[1] : x)
+scalarize(x) = x
+
+vectorize(x::Array) = x
+vectorize(x) = [x]
+
+for nb in (vnb[2], vnb)
+    for nc in (vnc[2], vnc)
+        for wl in (vwl[2], vwl)
+            ra = (na-nb)./(na+nb)
+            rb = (nb-nc)./(nb+nc)
+            sab = scalarize(map(x -> SMatrix.SMat(x, 1-x, 1+x, -x), ra))
+            sbc = scalarize(map(x -> SMatrix.SMat(x, 1-x, 1+x, -x), rb))
+            phases = exp(1im*2*pi*h*(nb./wl))
+            pb  = scalarize(map(x -> SMatrix.Propagator(x), phases))
+            sac = SMatrix.add_layer(sab, pb, sbc)
+            R = scalarize(map(x -> abs(x.s11)^2, vectorize(sac)))
+            if issubtype(typeof(R), Number)
+                @test R<1e-10
+            else
+                @test R[1]>1e-5 && R[2]<1e-10 && R[3]>1e-5
+            end
+        end
+    end
+end
+
 println("arbitrary 121 system")
 a = SMatrix.SMat(0.2,[0.3 0.4],[0.5 0.6].',[0.3 -0.4;0.1 -0.03])
 b = SMatrix.SMat([0.31 -0.42;0.13 -0.031im],[0.51 0.63].',[0.34 0.41],0.22)
