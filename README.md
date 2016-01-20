@@ -45,7 +45,7 @@ s_ac = SMatrix.add_layer(s_ab, p_b, s_bc)  # s_ab and a_bc are fixed in this exa
 R = map(x->abs(x.s11)^2, s_ac)             # array of reflectivities
 ```
 
-Now we can plot the air/AR/glass relectivity as a fucntion of the wavelength:
+Now we can plot the air/AR/glass relectivity as a function of the wavelength:
 
 ```
 using PyPlot
@@ -62,4 +62,39 @@ a = SMatrix.SMat(0.2,[0.3 0.4],[0.5 0.6].',[0.3 -0.4;0.1 -0.03])
 b = SMatrix.SMat([0.31 -0.42;0.13 -0.031im],[0.51 0.63].',[0.34 0.41],0.22)
 p = SMatrix.Propagator([0.8+0.1im, 0.01])
 ab = SMatrix.add_layer(a,p,b)              # 4 numbers
+```
+
+### Multilayered mirror
+
+Not that compute_stack_p or compute_stack_m are not the more efficient ways
+to compute an ababababab... multilayer.
+
+```
+n0 = 1
+na = 1.5
+nb = 2
+wl0 = 0.5
+ha = wl0/(4*na)
+hb = wl0/(4*nb)
+vwl = 0.4:0.001:0.8                        # wavelengths
+pa  = map(x -> SMatrix.Propagator(exp(1im*na*2*pi*ha/x)),
+          vwl)                            # array of propagators
+pb  = map(x -> SMatrix.Propagator(exp(1im*nb*2*pi*hb/x)),
+          vwl)                            # array of propagators
+
+r0a0 = (n0-na)./(n0+na)
+rbab = (nb-na)./(nb+na)
+s0a = SMatrix.SMat(r0a0, 1-r0a0, 1+r0a0, -r0a0)
+sa0 = SMatrix.SMat(-r0a0, 1+r0a0, 1-r0a0, +r0a0)
+sba = SMatrix.SMat(rbab, 1-rbab, 1+rbab, -rbab)
+sab = SMatrix.SMat(-rbab, 1+rbab, 1-rbab, +rbab)
+stack = SMatrix.Stack({s0a,
+                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
+                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
+                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba})
+sp = SMatrix.compute_stack_p(stack)
+sm = SMatrix.compute_stack_m(stack)
+Rp = map(x->abs(x.s11)^2, sp)
+Rm = map(x->abs(x.s11)^2, sm)
+plot(vwl, Rp)
 ```
