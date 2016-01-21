@@ -30,8 +30,8 @@ s_ab = SMatrix.SMat(ra, 1-ra, 1+ra, -ra)   # air/AR S-matrix, 4 numbers
 s_bc = SMatrix.SMat(rb, 1-rb, 1+rb, -rb)   # AR/glass S-matrix, 4 numbers
 p_b  = SMatrix.Propagator(exp(1im*2*pi/4)) # AR propagator (1im indeed)
 s_ac = SMatrix.add_layer(s_ab, p_b, s_bc)  # air/AR/glass S-matrix
-R = abs(s_ac.s11)^2                        # reflection is 0
-T = abs(s_ac.s21)^2*nc/na                  # transmission is 1
+R = abs2(s_ac.s11)                        # reflection is 0
+T = abs2(s_ac.s21)*nc/na                  # transmission is 1
 ```
 
 ### add_layer arguments can be vectors (all having the same size, or 1)
@@ -42,7 +42,7 @@ vwl = 0.4:0.01:0.8                         # wavelengths
 p_b  = map(x -> SMatrix.Propagator(exp(1im*nb*2*pi*h/x)),
        	   vwl)                            # array of propagators
 s_ac = SMatrix.add_layer(s_ab, p_b, s_bc)  # s_ab and a_bc are fixed in this example
-R = map(x->abs(x.s11)^2, s_ac)             # array of reflectivities
+R = map(x->abs2(x.s11), s_ac)             # array of reflectivities
 ```
 
 Now we can plot the air/AR/glass relectivity as a function of the wavelength:
@@ -96,8 +96,8 @@ stack = SMatrix.Stack(Any[s0a,
                           pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba])
 sp = SMatrix.compute_stack_p(stack)
 sm = SMatrix.compute_stack_m(stack)
-Rp = map(x->abs(x.s11)^2, sp)
-Rm = map(x->abs(x.s11)^2, sm)
+Rp = map(x->abs2(x.s11), sp)
+Rm = map(x->abs2(x.s11), sm)
 
 using PyPlot
 plot(vwl, Rp)
@@ -113,7 +113,7 @@ h = 10*wl0/(2*na)
 p  = map(x -> SMatrix.Propagator(exp(1im*na*2*pi*h/x)),
          vwl)                            # array of propagators
 s = SMatrix.compute_stack_p(SMatrix.Stack(Any[sa,p,sb]))
-T = map(x->abs(x.s21)^2, s)
+T = map(x->abs2(x.s21), s)
 plot(vwl, T)
 ```
 
@@ -145,7 +145,7 @@ vp = map(x -> SMatrix.Propagator(x), exp(1im*vn*2*pi.*vh/wl));
 stack = SMatrix.Stack(vi,vp)
 
 sp = SMatrix.compute_stack_p(stack);
-R = abs(sp.s11)^2
+R = abs2(sp.s11)
 si = SMatrix.compute_stack_full(stack);
 
 vhs = cumsum([0;vh])

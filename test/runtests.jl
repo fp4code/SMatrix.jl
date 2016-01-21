@@ -129,8 +129,8 @@ stack = SMatrix.Stack(Any[s0a,
                           pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba])
 sp = SMatrix.compute_stack_p(stack)
 sm = SMatrix.compute_stack_m(stack)
-Rp = map(x->abs(x.s11)^2, sp)
-Rm = map(x->abs(x.s11)^2, sm)
+Rp = map(x->abs2(x.s11), sp)
+Rm = map(x->abs2(x.s11), sm)
 @test maximum(Rp - Rm) < 1e-14
 
 
