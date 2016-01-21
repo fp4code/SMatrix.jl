@@ -1,5 +1,6 @@
 module SMatrix
 import Base.convert
+using Debug
 
 STerm = Union{Float32, Float64, Complex64, Complex128,
               Array{Float32}, Array{Float64},
@@ -51,7 +52,53 @@ type Propagator
     end
 end
 
-Stack = Vector{Union{SMat,Propagator,Array{SMat},Array{Propagator}}}
+type Stack
+    s::Vector{Union{SMat,Array{SMat}}}
+    p::Vector{Union{Propagator,Array{Propagator}}}
+#    function Stack(s::Vector{Union{SMat,Array{SMat}}}, p::Vector{Union{Propagator,Array{Propagator}}})
+    function Stack(s,p)
+        if length(s) != length(p)+1
+            throw(ArgumentError("size mismatch"))
+        end
+        new(s,p)
+    end
+    function Stack(stack::Vector{Any})
+        s = stack[1:2:end]
+        p = stack[2:2:end]
+        if length(s) != length(p)+1
+            throw(ArgumentError("stack should not begin or end with a P term"))
+        end
+        new(s,p)
+    end
+end
+
+#=
+useful to compute fields
+
+1       s11
+--------------
+sa1[1]  ^^^^^^
+vvvvvv  sb1[1]
+--------------
+sa1[2]  ^^^^^^
+vvvvvv  sb1[2]
+--------------
+...
+--------------
+sa1[end]   ^^^
+vvv   sb1[end]
+--------------
+s22
+
+=#
+type AmpStack
+    s11::STerm
+    sa1::Array{STerm}
+    sb1::Array{STerm}
+    s21::STerm
+    AmpStack() = new()
+    AmpStack(s11,sa1,ab1,s21) = new(s11,sa1,ab1,s21)
+end
 
 #function isgoodstask(stack::Stack)
 #    TO BE DONE
@@ -61,6 +108,7 @@ eye(x::Number) = one(x)
 eye(x) = Base.eye(x)
 
 function add_layer(s_XY::SMat,pY::Propagator,s_YZ::SMat)
+    # TODO: use code from add_layer_i
     ps11 = pY.m * s_YZ.s11
     ps12 = pY.m * s_YZ.s12
     ps22 = pY.p * s_XY.s22
@@ -93,6 +141,15 @@ function add_layer_i(s_XY::SMat,pY::Propagator,s_YZ::SMat)
     s11 = s_XY.s11 + s_XY.s12*pY.m*s_YZ.s11*ppsa1
     s22 = s_YZ.s22 + s_YZ.s21*pY.p*s_XY.s22*pmsb2
     return SMatI(s11,s12,sa1,sb2,s21,s22)
+end
+
+function internal_layer(s_XY::SMat,pY::Propagator,s_YZ::SMat)
+    a22pm = s_XY.s22 * pY.m
+    b11pp = s_YZ.s11 * pY.p
+    loopaba = a22pm*b11pp
+    sa = (eye(loopaba) - loopaba)\s_XY.s21
+    sb = pY.m * s_XY.s11 * pY.p * sa
+    return (sa, sb)
 end
 
 function add_layer(a::SMatStack,p::Propagator,b::SMatStack)
@@ -157,23 +214,69 @@ add_layer(a::SMat,p::Array{Propagator},b::SMat) = add_layer([a],p,[b])
 add_layer(a::SMat,p::Propagator,b::Array{SMat}) = add_layer([a],[p],b)
 
 function compute_stack_p(stack::Stack)
-    s = stack[1]
-    for i in 2:2:length(stack)
-        # TODO: add checks
-        s = add_layer(s, stack[i], stack[i+1])
+    n = length(stack.p)
+    if length(stack.s) != n+1
+        throw(ArgumentError("size mismatch"))
+    end
+    s = stack.s[1]
+    for i in 1:n
+        s = add_layer(s, stack.p[i], stack.s[i+1])
     end
     return s
 end
 
 function compute_stack_m(stack::Stack)
-    s = stack[end]
-    for i in length(stack)-1:-2:1
-        # TODO: add checks
-        s = add_layer(stack[i-1], stack[i], s)
+    n = length(stack.p)
+    if length(stack.s) != n+1
+        throw(ArgumentError("size mismatch"))
     end
+    s = stack.s[n+1]
+    for i in n:-1:1
+        s = add_layer(stack.s[i], stack.p[i], s)
+    end
+    println(s.s11)
     return s
 end
 
+@debug function compute_stack_full(stack::Stack)
+    n = length(stack.p)
+    #
+    sa21 = Vector{STerm}(n+1)
+    sa22 = Vector{STerm}(n+1)
+    s = stack.s[1]
+    sa21[1] = s.s21
+    sa22[1] = s.s22
+    for i in 1:n
+        s = add_layer(s, stack.p[i], stack.s[i+1])
+        sa21[i+1] = s.s21
+        sa22[i+1] = s.s22
+    end
+    #
+    s11 = s.s11
+    s21 = s.s21
+    sb12 = Vector{STerm}(n+1)
+    sb11 = Vector{STerm}(n+1)
+    s = stack.s[n+1]
+    sb12[n+1] = s.s12
+    sb11[n+1] = s.s11
+    for i in n:-1:1
+        s = add_layer(stack.s[i], stack.p[i], s)
+        sb12[i] = s.s12
+        sb11[i] = s.s11
+    end
+    #
+    sa1 = Vector{STerm}(n)
+    sb1 = Vector{STerm}(n)
+    for i in 1:n
+        a22pm = sa22[i] * stack.p[i].m
+        b11pp = sb11[i+1] * stack.p[i].p
+        loopaba = a22pm*b11pp
+        sa1[i] = (eye(loopaba) - loopaba)\sa21[i]
+        sb1[i] = b11pp * sa1[i]
+    end
+    # return (AmpStack(s11,sa1,sb1,s21),sa21,sa22,sb11,sb12)
+    return AmpStack(s11,sa1,sb1,s21)
+end
 
 
 end # module

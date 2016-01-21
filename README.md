@@ -90,10 +90,10 @@ s0a = SMatrix.SMat(r0a0, 1-r0a0, 1+r0a0, -r0a0)
 sa0 = SMatrix.SMat(-r0a0, 1+r0a0, 1-r0a0, +r0a0)
 sba = SMatrix.SMat(rbab, 1-rbab, 1+rbab, -rbab)
 sab = SMatrix.SMat(-rbab, 1+rbab, 1-rbab, +rbab)
-stack = SMatrix.Stack({s0a,
-                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
-                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
-                      pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba})
+stack = SMatrix.Stack(Any[s0a,
+                          pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
+                          pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,
+                          pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba,pa,sab,pb,sba])
 sp = SMatrix.compute_stack_p(stack)
 sm = SMatrix.compute_stack_m(stack)
 Rp = map(x->abs(x.s11)^2, sp)
@@ -103,7 +103,7 @@ using PyPlot
 plot(vwl, Rp)
 ```
 
-Using two such mirrors to create a Fabry-Perot etalon
+Using two such mirrors to create a Fabry-Perot etalon:
 
 ```
 sa = sp
@@ -115,4 +115,54 @@ p  = map(x -> SMatrix.Propagator(exp(1im*na*2*pi*h/x)),
 s = SMatrix.compute_stack_p(SMatrix.Stack(Any[sa,p,sb]))
 T = map(x->abs(x.s21)^2, s)
 plot(vwl, T)
+```
+
+### field in a multilayered mirror
+
+```
+using SMatrix
+
+n0 = 1
+na = 1.5
+nb = 2
+wl0 = 0.5
+ha = wl0/(4*na)
+hb = wl0/(4*nb)
+wl = wl0
+
+r0a0 = (n0-na)./(n0+na)
+rbab = (nb-na)./(nb+na)
+s0a = SMatrix.SMat(r0a0, 1-r0a0, 1+r0a0, -r0a0)
+sa0 = SMatrix.SMat(-r0a0, 1+r0a0, 1-r0a0, +r0a0)
+sba = SMatrix.SMat(rbab, 1-rbab, 1+rbab, -rbab)
+sab = SMatrix.SMat(-rbab, 1+rbab, 1-rbab, +rbab)
+
+vi = [s0a,sab,sba,sab,sba,sab,sba,sab,sba,sab,sba,sab,sba,sab,sba,sab,sba];
+vh = [ha,hb,ha,hb,ha,hb,ha,hb,ha,hb,ha,hb,ha,hb,ha,hb];
+vn = [na,nb,na,nb,na,nb,na,nb,na,nb,na,nb,na,nb,na,nb];
+vp = map(x -> SMatrix.Propagator(x), exp(1im*vn*2*pi.*vh/wl));
+
+stack = SMatrix.Stack(vi,vp)
+
+sp = SMatrix.compute_stack_p(stack);
+R = abs(sp.s11)^2
+si = SMatrix.compute_stack_full(stack);
+
+vhs = cumsum([0;vh])
+x = Vector{Float64}()
+a = Vector{Complex128}()
+for i in 1:length(vh)
+    vdx = linspace(0,vh[i],11)[1:end-1]
+    for xx in vdx
+    	push!(x, vhs[i] + xx)
+        pa  = exp(1im*vn[i]*2*pi*xx/wl)
+        pb  = exp(1im*vn[i]*2*pi*(vh[i]-xx)/wl)
+	a1 = pa*si.sa1[i]
+	a2 = pb*si.sb1[i]
+	push!(a, a1+a2)
+    end
+end
+
+using PyPlot
+plot(x, real(a),x, imag(a))
 ```
