@@ -16,6 +16,7 @@ type SMatI
     s21::STerm
     s22::STerm
     SMatI(s11,s12,sa1,sb2,s21,s22) = new(s11,s12,sa1,sb2,s21,s22)
+    SMatI() = new()
 end
 
 type SMat
@@ -25,6 +26,7 @@ type SMat
     s22::STerm
     SMat(s11,s12,s21,s22) = new(s11,s12,s21,s22)
     SMat(s::SMatI) = new(s.s11,s.s12,s.s21,s.s22)
+    SMat() = new()
 end
 
 type SMatStack
@@ -234,7 +236,6 @@ function compute_stack_m(stack::Stack)
     for i in n:-1:1
         s = add_layer(stack.s[i], stack.p[i], s)
     end
-    println(s.s11)
     return s
 end
 
