@@ -1,6 +1,5 @@
 module SMatrix
 import Base.convert
-using Debug
 
 STerm = Union{Float32, Float64, Complex64, Complex128,
               Array{Float32}, Array{Float64},
@@ -239,7 +238,7 @@ function compute_stack_m(stack::Stack)
     return s
 end
 
-@debug function compute_stack_full(stack::Stack)
+function compute_stack_full(stack::Stack)
     n = length(stack.p)
     #
     sa21 = Vector{STerm}(n+1)
