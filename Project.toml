@@ -1,0 +1,15 @@
+name = "SMatrix"
+uuid = "6f0b4d9c-c852-4412-9bd9-32d1eec07153"
+authors = ["Fabrice Pardo <fabrice.pardo@c2n.upsaclay.fr>"]
+version = "0.2.0"
+
+[deps]
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
+
+[compat]
+julia = "^1"
