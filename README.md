@@ -1,3 +1,6 @@
+[gh-ci-img]: https://github.com/fp4code/SMatrix.jl/workflows/ci/badge.svg?branch=master
+[gh-ci-url]: https://github.com/fp4code/SMatrix.jl/actions?query=workflow%3Aci
+
 # SMatrix
 
 Non commutative S-Matrix code, mainly for modal analysis of optical periodic structures.
