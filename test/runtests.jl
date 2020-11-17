@@ -1,5 +1,7 @@
 using SMatrix
-using Base.Test
+using Test
+
+using LinearAlgebra
 
 println("stupid scalar test")
 sxy = SMatrix.SMat(0,1,1,0)
@@ -30,17 +32,17 @@ syz = SMatrix.SMat(r232,t23,t32,r323)
 py = SMatrix.Propagator(1im)
 sxz = SMatrix.add_layer(sxy,py,syz)
 
-@test_approx_eq_eps sxz.s11 0.0 1e-14
-@test_approx_eq_eps sxz.s11 0.0 1e-14
-@test_approx_eq_eps abs(sxz.s21) sqrt(n1/n3) 1e-14
-@test_approx_eq_eps abs(sxz.s12) sqrt(n3/n1) 1e-14
+@test isapprox(sxz.s11, 0.0, atol=1e-14)
+@test isapprox(sxz.s11, 0.0, atol= 1e-14)
+@test isapprox(abs(sxz.s21), sqrt(n1/n3), atol= 1e-14)
+@test isapprox(abs(sxz.s12), sqrt(n3/n1), atol= 1e-14)
 
 sxz = SMatrix.add_layer_i(sxy,py,syz)
 
-@test_approx_eq_eps sxz.s11 0.0 1e-14
-@test_approx_eq_eps sxz.s11 0.0 1e-14
-@test_approx_eq_eps abs(sxz.s21) sqrt(n1/n3) 1e-14
-@test_approx_eq_eps abs(sxz.s12) sqrt(n3/n1) 1e-14
+@test isapprox(sxz.s11, 0.0, atol= 1e-14)
+@test isapprox(sxz.s11, 0.0, atol= 1e-14)
+@test isapprox(abs(sxz.s21), sqrt(n1/n3), atol= 1e-14)
+@test isapprox(abs(sxz.s12), sqrt(n3/n1), atol= 1e-14)
 
 #=
 sxy = SMatrix.SMatStack(r121,t12,t21,r212)
@@ -51,7 +53,7 @@ sxz = SMatrix.add_layer(sxy,py,syz)
 
 println("anti-reflection coating on glass, combination of scalar/array arguments")
 na = 1.0
-vnb = sqrt([1.4,1.5,1.6])
+vnb = sqrt.([1.4,1.5,1.6])
 vnc = [1.4,1.5,1.6]
 vwl = [0.4,0.5,0.6]
 h = vwl[2]/(4*vnb[2])
@@ -65,15 +67,15 @@ vectorize(x) = [x]
 for nb in (vnb[2], vnb)
     for nc in (vnc[2], vnc)
         for wl in (vwl[2], vwl)
-            ra = (na-nb)./(na+nb)
-            rb = (nb-nc)./(nb+nc)
+            ra = (na.-nb)./(na.+nb)
+            rb = (nb.-nc)./(nb.+nc)
             sab = scalarize(map(x -> SMatrix.SMat(x, 1-x, 1+x, -x), ra))
             sbc = scalarize(map(x -> SMatrix.SMat(x, 1-x, 1+x, -x), rb))
-            phases = exp(1im*2*pi*h*(nb./wl))
+            phases = exp.(1im*2*pi*h*(nb./wl))
             pb  = scalarize(map(x -> SMatrix.Propagator(x), phases))
             sac = SMatrix.add_layer(sab, pb, sbc)
             R = scalarize(map(x -> abs(x.s11)^2, vectorize(sac)))
-            if issubtype(typeof(R), Number)
+            if (typeof(R) <: Number)
                 @test R<1e-10
             else
                 @test R[1]>1e-5 && R[2]<1e-10 && R[3]>1e-5
@@ -83,20 +85,20 @@ for nb in (vnb[2], vnb)
 end
 
 println("arbitrary 121 system")
-a = SMatrix.SMat(0.2,[0.3 0.4],[0.5 0.6].',[0.3 -0.4;0.1 -0.03])
-b = SMatrix.SMat([0.31 -0.42;0.13 -0.031im],[0.51 0.63].',[0.34 0.41],0.22)
+a = SMatrix.SMat([0.2],[0.3 0.4],[0.5 ; 0.6],[0.3 -0.4;0.1 -0.03])
+b = SMatrix.SMat([0.31 -0.42;0.13 -0.031im],[0.51 ; 0.63],[0.34 0.41],[0.22])
 pp = [0.1+1im,0.4]
 pm = [0.2+1im,0.2]
 p = SMatrix.Propagator(pp,pm)
 ab = SMatrix.add_layer(a,p,b)
 abi = SMatrix.add_layer_i(a,p,b)
 
-pp = diagm(pp)
-pm = diagm(pm)
-@test ab.s11 ≈  a.s11 + a.s12*inv(eye(2) - pm*b.s11*pp*a.s22)*pm*b.s11*pp*a.s21
-@test ab.s22 ≈  b.s22 + b.s21*inv(eye(2) - pp*a.s22*pm*b.s11)*pp*a.s22*pm*b.s12
-@test ab.s21 ≈ b.s21*inv(eye(2) - pp*a.s22*pm*b.s11)*pp*a.s21
-@test ab.s12 ≈ a.s12*inv(eye(2) - pm*b.s11*pp*a.s22)*pm*b.s12
+pp = Diagonal(pp)
+pm = Diagonal(pm)
+@test ab.s11 ≈  a.s11 + a.s12*inv(I - pm*b.s11*pp*a.s22)*pm*b.s11*pp*a.s21
+@test ab.s22 ≈  b.s22 + b.s21*inv(I - pp*a.s22*pm*b.s11)*pp*a.s22*pm*b.s12
+@test ab.s21 ≈ b.s21*inv(I - pp*a.s22*pm*b.s11)*pp*a.s21
+@test ab.s12 ≈ a.s12*inv(I - pm*b.s11*pp*a.s22)*pm*b.s12
 
 @test ab.s11 ≈ abi.s11
 @test ab.s22 ≈ abi.s22
@@ -132,7 +134,3 @@ sm = SMatrix.compute_stack_m(stack)
 Rp = map(x->abs2(x.s11), sp)
 Rm = map(x->abs2(x.s11), sm)
 @test maximum(Rp - Rm) < 1e-14
-
-
-
-

@@ -1,13 +1,15 @@
 module SMatrix
 import Base.convert
 
-STerm = Union{Float32, Float64, Complex64, Complex128,
+using LinearAlgebra
+
+STerm = Union{Float32, Float64, Complex{Float32}, Complex{Float64},
               Array{Float32}, Array{Float64},
-              Array{Complex64}, Array{Complex128}}
+              Array{ Complex{Float32}}, Array{ Complex{Float64}}}
 
 convert(::Type{STerm}, x::Int) = Float64(x)
 
-type SMatI
+mutable struct SMatI
     s11::STerm
     s12::STerm
     sa1::STerm
@@ -18,7 +20,7 @@ type SMatI
     SMatI() = new()
 end
 
-type SMat
+mutable struct SMat
     s11::STerm
     s12::STerm
     s21::STerm
@@ -28,7 +30,7 @@ type SMat
     SMat() = new()
 end
 
-type SMatStack
+mutable struct SMatStack
     s11::Vector{STerm}
     s12::Vector{STerm}
     s21::Vector{STerm}
@@ -40,7 +42,7 @@ type SMatStack
                             Vector{STerm}(n),Vector{STerm}(n),n)
 end
 
-type Propagator
+mutable struct Propagator
     p # plus direction
     m # minus direction
     Propagator(p::Number) = new(p,p)
@@ -53,7 +55,7 @@ type Propagator
     end
 end
 
-type Stack
+struct Stack
     s::Vector{Union{SMat,Array{SMat}}}
     p::Vector{Union{Propagator,Array{Propagator}}}
 #    function Stack(s::Vector{Union{SMat,Array{SMat}}}, p::Vector{Union{Propagator,Array{Propagator}}})
@@ -92,7 +94,7 @@ vvv   sb1[end]
 s22
 
 =#
-type AmpStack
+mutable struct AmpStack
     s11::STerm
     sa1::Array{STerm}
     sb1::Array{STerm}
@@ -105,9 +107,6 @@ end
 #    TO BE DONE
 #end
 
-eye(x::Number) = one(x)
-eye(x) = Base.eye(x)
-
 function add_layer(s_XY::SMat,pY::Propagator,s_YZ::SMat)
     # TODO: use code from add_layer_i
     ps11 = pY.m * s_YZ.s11
@@ -117,8 +116,8 @@ function add_layer(s_XY::SMat,pY::Propagator,s_YZ::SMat)
     # symmetric formulation, maybe not efficient...
     loop12 = ps11*ps22
     loop21 = ps22*ps11
-    d1 = s_XY.s12 / (eye(loop12) - loop12)
-    d2 = s_YZ.s21 / (eye(loop21) - loop21)
+    d1 = s_XY.s12 / (one(loop12) - loop12)
+    d2 = s_YZ.s21 / (one(loop21) - loop21)
     #
     s11 = s_XY.s11 + d1 * ps11 * ps21
     s12 = d1 * ps12
@@ -133,8 +132,8 @@ function add_layer_i(s_XY::SMat,pY::Propagator,s_YZ::SMat)
     b11pp = s_YZ.s11 * pY.p
     loopaba = a22pm*b11pp
     loopbab = b11pp*a22pm
-    sa1 = (eye(loopaba) - loopaba)\s_XY.s21
-    sb2 = (eye(loopbab) - loopbab)\s_YZ.s12
+    sa1 = (one(loopaba) - loopaba)\s_XY.s21
+    sb2 = (one(loopbab) - loopbab)\s_YZ.s12
     ppsa1 = pY.p*sa1
     pmsb2 = pY.m*sb2
     s12 = s_XY.s12*pmsb2
@@ -148,7 +147,7 @@ function internal_layer(s_XY::SMat,pY::Propagator,s_YZ::SMat)
     a22pm = s_XY.s22 * pY.m
     b11pp = s_YZ.s11 * pY.p
     loopaba = a22pm*b11pp
-    sa = (eye(loopaba) - loopaba)\s_XY.s21
+    sa = (one(loopaba) - loopaba)\s_XY.s21
     sb = pY.m * s_XY.s11 * pY.p * sa
     return (sa, sb)
 end
@@ -167,42 +166,52 @@ function add_layer(a::SMatStack,p::Propagator,b::SMatStack)
     loopaba = a22*p.m*b11*p.p
     loopbab = b11*p.p*a22*p.m
     #
-    a21l = (eye(loopaba) - loopaba)\a21
-    b12l = (eye(loopbab) - loopbab)\b12
+    a21l = (one(loopaba) - loopaba)\a21
+    b12l = (one(loopbab) - loopbab)\b12
     #
     c = SMatStack(a.n + 1 + b.n)
     throw(AssertionError("Unfinished code"))
 end
 
+
+function forceone(i::Int, one::Bool)
+    if one
+        1
+    else
+        i
+    end
+end
     
 function add_layer(a::Union{Array{SMat},Array{SMatStack}},
                    p::Array{Propagator},
                    b::Union{Array{SMat},Array{SMatStack}})
     s = max(size(a), size(p), size(b))
     if size(a) == (1,)
-        ia(i::Int) = 1
+        ia = true
     elseif size(a) == s
-        ia(i::Int) = i
+        ia = false
     else
         throw(ArgumentError("Size mismatch for argument 1"))
     end
     if size(p) == (1,)
-        ip(i::Int) = 1
+        ip = true
     elseif size(p) == s
-        ip(i::Int) = i
+        ip = false
     else
         throw(ArgumentError("Size mismatch for argument 2"))
     end
     if size(b) == (1,)
-        ib(i::Int) = 1
+        ib = true
     elseif size(b) == s
-        ib(i::Int) = i
+        ib = false
     else
         throw(ArgumentError("Size mismatch for argument 3"))
     end
-    sm = Array(SMatrix.SMat, s)
+    sm = Vector{SMatrix.SMat}(undef, s)
     for i in 1:prod(s)
-        sm[i] = add_layer(a[ia(i)],p[ip(i)],b[ib(i)])
+        sm[i] = add_layer(a[forceone(i, ia)],
+                          p[forceone(i, ip)],
+                          b[forceone(i, ib)])
     end
     return sm
 end
@@ -271,7 +280,7 @@ function compute_stack_full(stack::Stack)
         a22pm = sa22[i] * stack.p[i].m
         b11pp = sb11[i+1] * stack.p[i].p
         loopaba = a22pm*b11pp
-        sa1[i] = (eye(loopaba) - loopaba)\sa21[i]
+        sa1[i] = (one(loopaba) - loopaba)\sa21[i]
         sb1[i] = b11pp * sa1[i]
     end
     # return (AmpStack(s11,sa1,sb1,s21),sa21,sa22,sb11,sb12)
