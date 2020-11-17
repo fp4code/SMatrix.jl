@@ -5,7 +5,9 @@ Non commutative S-Matrix code, mainly for modal analysis of optical periodic str
 ## Installation
 
 ```
-Pkg.clone("git://github.com/fp4code/SMatrix.jl")
+import Pkg;
+Pkg.activate("mytestenv")
+Pkg.add(url="git://github.com/fp4code/SMatrix.jl")
 ```
 
 ## Testing
