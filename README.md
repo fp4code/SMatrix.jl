@@ -50,6 +50,7 @@ R = map(x->abs2(x.s11), s_ac)             # array of reflectivities
 Now we can plot the air/AR/glass relectivity as a function of the wavelength:
 
 ```
+# Pkg.add("PyPlot")
 using PyPlot
 plot(vwl, R)
 ```
@@ -60,10 +61,10 @@ Here there is one mode in first medium, two modes in the layer and one mode in t
 Theses values are arbitrary, and certainly not reciprocal!
 
 ```
-a = SMatrix.SMat(0.2,[0.3 0.4],[0.5 0.6].',[0.3 -0.4;0.1 -0.03])
-b = SMatrix.SMat([0.31 -0.42;0.13 -0.031im],[0.51 0.63].',[0.34 0.41],0.22)
+a = SMatrix.SMat([0.2], [0.3 0.4], [0.5; 0.6], [0.3 -0.4; 0.1 -0.03])
+b = SMatrix.SMat([0.31 -0.42; 0.13 -0.031im], [0.51; 0.63], [0.34 0.41], [0.22])
 p = SMatrix.Propagator([0.8+0.1im, 0.01])
-ab = SMatrix.add_layer(a,p,b)              # 4 numbers
+ab = SMatrix.add_layer(a, p, b)              # 4 numbers ab.s11 ab.s12 ab.s21 ab.s22
 ```
 
 ### multilayered mirror
@@ -142,9 +143,9 @@ sab = SMatrix.SMat(-rbab, 1+rbab, 1-rbab, +rbab)
 vi = [s0a,sab,sba,sab,sba,sab,sba,sab,sba,sab,sba,sab,sba,sab,sba,sab,sba];
 vh = [ha,hb,ha,hb,ha,hb,ha,hb,ha,hb,ha,hb,ha,hb,ha,hb];
 vn = [na,nb,na,nb,na,nb,na,nb,na,nb,na,nb,na,nb,na,nb];
-vp = map(x -> SMatrix.Propagator(x), exp(1im*vn*2*pi.*vh/wl));
+vp = map(x -> SMatrix.Propagator(x), exp.(1im*vn*2*pi.*vh/wl));
 
-stack = SMatrix.Stack(vi,vp)
+stack = SMatrix.Stack(vi, vp)
 
 sp = SMatrix.compute_stack_p(stack);
 R = abs2(sp.s11)
@@ -152,9 +153,9 @@ si = SMatrix.compute_stack_full(stack);
 
 vhs = cumsum([0;vh])
 x = Vector{Float64}()
-a = Vector{Complex128}()
+a = Vector{Complex{Float64}}()
 for i in 1:length(vh)
-    vdx = linspace(0,vh[i],11)[1:end-1]
+    vdx = range(0, vh[i], length=11)[1:end-1]
     for xx in vdx
     	push!(x, vhs[i] + xx)
         pa  = exp(1im*vn[i]*2*pi*xx/wl)

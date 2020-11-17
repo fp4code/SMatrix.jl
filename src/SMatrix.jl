@@ -250,8 +250,8 @@ end
 function compute_stack_full(stack::Stack)
     n = length(stack.p)
     #
-    sa21 = Vector{STerm}(n+1)
-    sa22 = Vector{STerm}(n+1)
+    sa21 = Vector{STerm}(undef, n+1)
+    sa22 = Vector{STerm}(undef, n+1)
     s = stack.s[1]
     sa21[1] = s.s21
     sa22[1] = s.s22
@@ -263,8 +263,8 @@ function compute_stack_full(stack::Stack)
     #
     s11 = s.s11
     s21 = s.s21
-    sb12 = Vector{STerm}(n+1)
-    sb11 = Vector{STerm}(n+1)
+    sb12 = Vector{STerm}(undef, n+1)
+    sb11 = Vector{STerm}(undef, n+1)
     s = stack.s[n+1]
     sb12[n+1] = s.s12
     sb11[n+1] = s.s11
@@ -274,8 +274,8 @@ function compute_stack_full(stack::Stack)
         sb11[i] = s.s11
     end
     #
-    sa1 = Vector{STerm}(n)
-    sb1 = Vector{STerm}(n)
+    sa1 = Vector{STerm}(undef, n)
+    sb1 = Vector{STerm}(undef, n)
     for i in 1:n
         a22pm = sa22[i] * stack.p[i].m
         b11pp = sb11[i+1] * stack.p[i].p
